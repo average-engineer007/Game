@@ -24,7 +24,7 @@ head_radius = 20
 head_x = screen_width // 2
 head_y = screen_height // 4
 
-torso_length = 100
+torso_length = 96
 torso_x = head_x
 torso_y = head_y + head_radius
 
@@ -45,6 +45,19 @@ leg_length = 70
 leg_x = torso_x
 leg_y = torso_y + torso_length
 
+
+tibia_length = torso_length/2
+femur_length = torso_length/2
+
+min_leg_angle = 45
+max_leg_angle = 90
+leg_angle = min_leg_angle
+elevation = int((tibia_length+femur_length)/1.415)
+print('eleveation')
+print(elevation)
+
+
+
 # Animation parameters
 
 
@@ -56,7 +69,7 @@ max_forearm_angle = 0
 arm_angle = 45
 foreArmAngle = -30
 
-arm_speed = 0.05  # Speed of arm movement
+arm_speed = 0.01  # Speed of arm movement
 foreArmSpeed = (arm_speed*(max_forearm_angle-min_forearm_angle))/(max_arm_angle-min_arm_angle)
 # Main loop
 while True:
@@ -101,6 +114,19 @@ while True:
     forerArm_y_left = upperArm_y_left - foreArmLength*math.sin(math.radians(foreArmAngle-(max_arm_angle-arm_angle)))
     print(foreArmLength*math.sin(math.radians(foreArmAngle-(max_arm_angle-arm_angle))))
 
+    #tibia position
+    print('ele')
+    print((elevation/(2*math.cos(math.radians(arm_angle)))))
+    femur_angle = math.acos((elevation/(2*math.cos(math.radians(90-arm_angle))))/femur_length) + math.radians(arm_angle)
+    femur_x_rignt = leg_x-femur_length*math.cos(femur_angle)
+    femur_y_rignt = leg_y+femur_length*math.sin(femur_angle)
+
+    femur_x_left = leg_x - femur_length * math.cos(femur_angle)
+    femur_y_left = leg_y + femur_length * math.sin(femur_angle)
+
+    tibia_x_right = leg_x-elevation/math.tan(math.radians(arm_angle))
+    tibia_y_right = leg_y+elevation
+
     # Draw upperarms
     pygame.draw.line(screen, stickman_color, (upperArm_x, upperArm_y), (upperArm_x_left, upperArm_y_left), stickman_width)
     pygame.draw.line(screen, stickman_color, (upperArm_x, upperArm_y), (upperArm_x_right, upperArm_y_right), stickman_width)
@@ -108,8 +134,8 @@ while True:
     pygame.draw.line(screen, stickman_color, (upperArm_x_left, upperArm_y_left), (forerArm_x_left, forerArm_y_left), stickman_width)
     pygame.draw.line(screen, stickman_color, (upperArm_x_right, upperArm_y_right),(foreArm_x_right,forerArm_y_right), stickman_width)
 
-    pygame.draw.line(screen, stickman_color, (leg_x, leg_y), (leg_x - leg_length, leg_y + leg_length), stickman_width)
-    pygame.draw.line(screen, stickman_color, (leg_x, leg_y), (leg_x + leg_length, leg_y + leg_length), stickman_width)
+    pygame.draw.line(screen, stickman_color, (leg_x, leg_y), (femur_x_rignt,femur_y_rignt), stickman_width)
+    pygame.draw.line(screen, stickman_color, (femur_x_rignt,femur_y_rignt), (tibia_x_right,tibia_y_right), stickman_width)
 
     # Update the display
     pygame.display.flip()

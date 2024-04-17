@@ -47,16 +47,18 @@ elevation = int((tibia_length+femur_length)/1.414)
 # Animation parameters
 
 
-max_arm_angle = 90  # Maximum angle for arm rotation
-min_arm_angle =30
-min_forearm_angle = -30
-max_forearm_angle = 0
+max_arm_angle = 60  # Maximum angle for arm rotation
+min_arm_angle =0
+min_rel_forearm_angle = 60
+max_rel_forearm_angle = 90
+min_rel_tibia_angle = 120
+max_rel_tibia_angle = 180
 
-arm_angle = 30
+rel_arm_angle = 60
 foreArmAngle = -30
 
 arm_speed = 0.05  # Speed of arm movement
-foreArmSpeed = (arm_speed*(max_forearm_angle-min_forearm_angle))/(max_arm_angle-min_arm_angle)
+# foreArmSpeed = (arm_speed*(max_forearm_angle-min_forearm_angle))/(max_arm_angle-min_arm_angle)
 oscillation =0
 # Main loop
 upperArm_right = []
@@ -76,18 +78,19 @@ while oscillation !=2:
             sys.exit()
 
     # Update arm angle
-    arm_angle += arm_speed
-    if arm_angle >= max_arm_angle:
+    rel_arm_angle -= arm_speed
+    if rel_arm_angle >= max_arm_angle:
         arm_speed *= -1  # Reverse direction of arm movement when reaching the maximum angl
         oscillation+=1
-    if arm_angle < min_arm_angle:
+    if rel_arm_angle < min_arm_angle:
         arm_speed*=-1
         oscillation+=1
-    foreArmAngle += foreArmSpeed
-    if foreArmAngle >= max_forearm_angle:
-        foreArmSpeed *= -1  # Reverse direction of arm movement when reaching the maximum angl
-    if foreArmAngle < min_forearm_angle:
-        foreArmSpeed*=-1
+    
+    # foreArmAngle += foreArmSpeed
+    # if foreArmAngle >= max_forearm_angle:
+    #     foreArmSpeed *= -1  # Reverse direction of arm movement when reaching the maximum angl
+    # if foreArmAngle < min_forearm_angle:
+    #     foreArmSpeed*=-1
 
     # Clear the screen
     screen.fill(black)
@@ -97,17 +100,19 @@ while oscillation !=2:
     pygame.draw.line(screen, stickman_color, (torso_x, torso_y), (torso_x, torso_y + torso_length), stickman_width)
 
     #upper arm position calculations
+    arm_angle = 90 - rel_arm_angle
     upperArm_x_right = upperArm_x + upperArmLength*math.cos(math.radians(arm_angle))
     upperArm_x_left = upperArm_x - upperArmLength*math.cos(math.radians(arm_angle))
     upperArm_y_right = upperArm_y + upperArmLength*math.sin(math.radians(arm_angle))
     upperArm_y_left = upperArm_y + upperArmLength*math.sin(math.radians(arm_angle))
     #fore arm position calculations
-    foreArm_x_right = upperArm_x_right + foreArmLength*math.cos(math.radians(foreArmAngle-(max_arm_angle-arm_angle)))
-    forerArm_y_right = upperArm_y_right + foreArmLength*math.sin(math.radians(foreArmAngle-(max_arm_angle-arm_angle)))
-    forerArm_x_left = upperArm_x_left + foreArmLength*math.cos(math.radians(foreArmAngle-(max_arm_angle-arm_angle)))
-    forerArm_y_left = upperArm_y_left - foreArmLength*math.sin(math.radians(foreArmAngle-(max_arm_angle-arm_angle)))
-    # print(foreArmLength*math.sin(math.radians(foreArmAngle-(max_arm_angle-arm_angle))))
 
+    foreArmAngle = math.radians((((max_rel_forearm_angle - min_rel_forearm_angle)/(max_arm_angle - min_arm_angle))+1)*(rel_arm_angle - min_arm_angle) + 90 - max_rel_forearm_angle + min_arm_angle)
+    foreArm_x_right = upperArm_x_right - foreArmLength*math.cos(foreArmAngle)
+    forerArm_y_right = upperArm_y_right + foreArmLength*math.sin(foreArmAngle)
+    forerArm_x_left = upperArm_x_left - foreArmLength*math.cos(foreArmAngle)
+    forerArm_y_left = upperArm_y_left - foreArmLength*math.sin(foreArmAngle)
+    # print(math.degrees(foreArmAngle))
     #tibia position
     # print('ele')
     
@@ -118,12 +123,15 @@ while oscillation !=2:
     femur_x_left = leg_x - femur_length * math.cos(math.radians(arm_angle))
     femur_y_left = leg_y + femur_length * math.sin(math.radians(arm_angle))
     # print(math.cos(femur_angle))
-    tibia_x_left = femur_x_left-tibia_length*math.cos(math.radians(2*arm_angle - 90))
-    tibia_y_left = femur_y_left+tibia_length*math.sin(math.radians(2*arm_angle - 90))
 
-    tibia_x_right = femur_x_right +tibia_length*math.cos(math.radians(2*arm_angle/3 + 30))
-    tibia_y_right = femur_y_right + tibia_length*math.sin(math.radians(2*arm_angle/3 + 30))
-    print(math.cos(math.radians(arm_angle/3 + 45)))
+    # tibiaAngle = math.radians((((max_rel_tibia_angle - min_rel_tibia_angle)/(max_arm_angle - min_arm_angle))+1)*(max_arm_angle-rel_arm_angle) + min_rel_tibia_angle - 90 - max_arm_angle)
+    tibia_x_left = femur_x_left-tibia_length*math.cos(math.radians(2*arm_angle/3 + 30))
+    tibia_y_left = femur_y_left+tibia_length*math.sin(math.radians(2*arm_angle/3 + 30))
+    
+    tibia_x_right = femur_x_right +tibia_length*math.cos(math.radians(2*arm_angle -90))
+    tibia_y_right = femur_y_right + tibia_length*math.sin(math.radians(2*arm_angle -90))
+    # print(math.degrees(tibiaAngle))
+    # print(math.cos(math.radians(arm_angle/3 + 45)))
 
     
 
@@ -132,7 +140,7 @@ while oscillation !=2:
     pygame.draw.line(screen, stickman_color, (upperArm_x, upperArm_y), (upperArm_x_right, upperArm_y_right), stickman_width)
 
     pygame.draw.line(screen, stickman_color, (upperArm_x_left, upperArm_y_left), (forerArm_x_left, forerArm_y_left), stickman_width)
-    pygame.draw.line(screen, stickman_color, (upperArm_x_right, upperArm_y_right),(foreArm_x_right,forerArm_y_right), stickman_width)
+    # pygame.draw.line(screen, stickman_color, (upperArm_x_right, upperArm_y_right),(foreArm_x_right,forerArm_y_right), stickman_width)
 
     pygame.draw.line(screen, stickman_color, (leg_x, leg_y), (femur_x_left,femur_y_left), stickman_width)
     pygame.draw.line(screen, stickman_color, (femur_x_left,femur_y_left), (tibia_x_left,tibia_y_left), stickman_width)

@@ -193,13 +193,14 @@ for _ in range(num_ropes):
 
 def infinite_generation():
     for rope in ropes_group:
-        if(rope.rect.x-scroll[0]<-100):
+        if(rope.rect.x-scroll[0]<-30) or (rope.rect.y - scroll[1]<-30):
             rope.destroy()
             ropes_group.remove(rope)
 
     if(len(ropes_group)<5):
         rope = Ropes()
         rope.rect.x+=true_scroll[0]+1000
+        rope.rect.y += true_scroll[1] 
         ropes_group.add(rope)
 
 def move(rect,movement):
@@ -239,9 +240,9 @@ while True:
     scroll[0] = int(scroll[0])
     scroll[1] = int(scroll[1])
     player.update()
-    # print(scroll[0],end=" ")
-    # print(player.rect.x,end=" ")
-    # print(player.rect.x-scroll[0])
+    print(scroll[0],end=" ")
+    print(player.rect.x,end=" ")
+    print(player.rect.x-scroll[0])
     player_movement=[0,0]
     
     # player.rect,collisions = move(player.rect,player_movement)

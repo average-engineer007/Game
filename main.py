@@ -2,7 +2,7 @@ import pygame
 import math
 from sys import exit
 import random
-from stickman_gen import stickmanRight
+# from stickman_gen import stickmanRight
 
 pygame.init()
 class Player(pygame.sprite.Sprite):
@@ -26,12 +26,39 @@ class Player(pygame.sprite.Sprite):
         self.y_pos=self.rect.y
         self.move_x=0
         self.move_y=0
+        self.line_collision = False
+        self.fall_damage=0
+        self.speed = 5
     
+    def above(self,start_point, end_point):
+        v1 = (end_point[0]- start_point[0], end_point[1] - start_point[1])
+        v2 = (self.rect.x+self.rect.width/2- start_point[0], self.rect.y+self.rect.height - start_point[1])
+        cross_product = v1[0] * v2[1] - v1[1] * v2[0]
+        above = False
+        if(cross_product < 0):
+            above = True
+        if(end_point[0] < start_point[0]):
+            above = not above
+        return above 
+    
+    def calculate_tangent_vector(self,start_pos, end_pos):
+        # Calculate the slope of the line
+        mag = math.sqrt((start_pos[0]-end_pos[0])**2 + (start_pos[1]-end_pos[1])**2)
+        if(mag == 0):
+            return 0,0
+        tangent_x = (start_pos[0]-end_pos[0])/mag
+        tangent_y = (start_pos[1]-end_pos[1])/mag
+        return abs(tangent_x), abs(tangent_y)
+
+
     def player_movement(self):
-        print(self.move_y, self.gravity)
+        # print(self.move_y, self.gravity)
+        print(self.fall_damage)
+        # terminal velocity
         if(self.gravity>0.16):
             self.gravity=0.16
         keys=pygame.key.get_pressed()
+
         if keys[pygame.K_UP] :
             self.move_y=-5
             self.gravity=-0.2
@@ -40,19 +67,21 @@ class Player(pygame.sprite.Sprite):
         # else:
         #     self.move_y=0
         # Apply horizontal movement
-        self.move_y+=self.gravity
+        if self.line_collision == False or self.above == False: 
+            self.move_y+=self.gravity
+        
         self.rect.y+=self.move_y
         bottom_platform =False
         top_platform = False
         hit_list = pygame.sprite.spritecollide(self,platform_group,False)
         for tile in hit_list:
             if self.move_y > 0:
-                # self.rect.bottom = tile.rect.top
+                self.rect.bottom = tile.rect.top
                 self.move_y = 0
                 top_platform=True
 
             elif self.move_y < 0:
-                # self.rect.top = tile.rect.bottom
+                self.rect.top = tile.rect.bottom
                 self.move_y = 0
                 bottom_platform=True
 
@@ -70,13 +99,13 @@ class Player(pygame.sprite.Sprite):
         for tile in hit_list:
             # print(type(tile.rect))
             if self.move_x > 0:
-                # self.rect.right = tile.rect.left
+                self.rect.right = tile.rect.left
                 right_wall = True
                 # self.gravity=-15
                 # self.move_y = -5
                 # collision_types['right'] = True
             elif self.move_x < 0:
-                # self.rect.left = tile.rect.right
+                self.rect.left = tile.rect.right
                 # self.gravity =-15
                 # self.move_y = -5
                 left_Wall = True
@@ -86,49 +115,57 @@ class Player(pygame.sprite.Sprite):
         line_collide_hitlist= []
         for line in lines:
             start_pos, end_pos, timestamp, old_scroll , last_old_scroll= line
-            l = abs(-end_pos[0]+start_pos[0])
-            b = abs(-end_pos[1]+start_pos[1])
-           
-
-
-            start_pos = (start_pos[0]+last_old_scroll[0], start_pos[1]+last_old_scroll[1])
-    # obstacle_group.draw(screen)
-            line_rect = pygame.Rect(start_pos, (l,b))
-            
-            pygame.draw.rect(screen,(0,0,0),(start_pos[0]-scroll[0], start_pos[1]-scroll[1],l,b),1)
             # print(start_pos, self.rect.x, self.rect.y)
-            if self.rect.colliderect(line_rect):
+            start_pos = (start_pos[0]+last_old_scroll[0], start_pos[1]+last_old_scroll[1])
+            end_pos = (end_pos[0]+old_scroll[0], end_pos[1]+old_scroll[1])
+            if len(self.rect.clipline(start_pos,end_pos)):
                 # print("Collision detected with line!", self.rect.x, self.rect.y)
                 line_collide_hitlist.append(line)
-        line_collision = False
+        self.line_collision = False
                 
         if len(line_collide_hitlist) > 0:
-            start_pos, end_pos, timestamp, old_scroll, last_old_scroll = line_collide_hitlist[0]
+            self.line_collision = True
+            avg_start_pos = None
+            avg_end_pos = None
+            for line in line_collide_hitlist:
+                start_pos, end_pos, timestamp, old_scroll, last_old_scroll = line
+                start_pos = (start_pos[0]+last_old_scroll[0], start_pos[1]+last_old_scroll[1])
+                end_pos = (end_pos[0]+old_scroll[0], end_pos[1]+old_scroll[1])
+                if avg_start_pos != None:
+                    avg_start_pos = (avg_start_pos[0] + start_pos[0], avg_start_pos[1] + start_pos[1])
+                    avg_end_pos = (avg_end_pos[0] + end_pos[0], avg_end_pos[1] + end_pos[1])
+                else:
+                    avg_end_pos = end_pos
+                    avg_start_pos = start_pos
+            avg_start_pos= (avg_start_pos[0]/len(line_collide_hitlist),avg_start_pos[1]/len(line_collide_hitlist) )
+            avg_end_pos= (avg_end_pos[0]/len(line_collide_hitlist),avg_end_pos[1]/len(line_collide_hitlist) )
+                
+
+                
+
             
-            slope = (start_pos[1] - end_pos[1]) / (start_pos[0] - end_pos[0])
-            start_pos = (start_pos[0]+last_old_scroll[0], start_pos[1]+last_old_scroll[1])
-            y_on_line = slope * (self.rect.x - start_pos[0]) + start_pos[1]
-            print(y_on_line,'(',self.rect.x, self.rect.y,')','(', start_pos[0],start_pos[1],')')
-            above_line = False
-            if self.rect.y > y_on_line:
-                print("Player is below the line")
-            elif self.rect.y < y_on_line:
-                above_line = True
-                print("Player is aboove the line")
-            else:
-                print("Player is on the line")
-        if (not line_collision):
+            above_line = self.above(avg_start_pos,avg_end_pos)
+        if (not self.line_collision):
             if(right_wall):
                 self.gravity= -0.2
                 self.move_y = -5
             if(left_Wall):
                 self.gravity = -0.2
                 self.move_y = -5
+        else:
+            if(above_line):
                 
-            
-
-            # if(line_eq >0):
-            #     above_line = True
+                tangent_x, tangent_y = self.calculate_tangent_vector(avg_start_pos, avg_end_pos)
+                
+                if(self.move_y > self.speed):
+                    self.fall_damage+=1
+                self.move_x = tangent_x * self.speed
+                self.move_y = -tangent_y * self.speed
+            else:                
+                tangent_x, tangent_y = self.calculate_tangent_vector(avg_start_pos, avg_end_pos)
+               
+                self.move_x = tangent_x * self.speed
+                self.move_y = tangent_y * self.speed
             
 
         
@@ -147,20 +184,6 @@ class Player(pygame.sprite.Sprite):
         
         # self.apply_gravity()
         # self.animate()
-
-# class ropes(pygame.sprite.Sprite):
-#     def __init__(self):
-#         super().__init__()
-#         global scroll_x
-#         global scroll_y
-#         self.image=pygame.image.load('Game/images/rope.png').convert_alpha()
-#         self.image = pygame.transform.scale(self.image, (self.image.get_width() // 3, self.image.get_height() // 3))
-#         self.rect = self.image.get_rect(midbottom = (100+scroll_x,300+scroll_y))
-#         border_color = (0, 0, 0)  # Example: white color
-#         border_width = 2
-#         image_width, image_height = self.image.get_size()
-#         pygame.draw.rect(self.image, border_color, (0, 0, image_width, image_height), border_width)
-
 
 class Ropes(pygame.sprite.Sprite):
     def __init__(self):
@@ -200,16 +223,12 @@ def collision_sprite():
     if pygame.sprite.spritecollide(player.sprite,platform_group,False):
         print("surface collision")
 
-
-
 def shift_back():
     if (player.rect.x>1000):
         player.rect.x-=1000
         true_scroll[0]-=1000
         for rope in ropes_group:
             rope.rect.x-=1000
-
-
 
 
 screen = pygame.display.set_mode((1000,800))
@@ -240,13 +259,13 @@ moving_left = False
 vertical_momentum = 0
 air_timer = 0
 num_ropes = 5  # Adjust as needed
-num_platform = 5
+num_platform = 3
 drawing = False
 last_pos = None
 last_scroll = None
 lines = []  # Store tuples (start_pos, end_pos, timestamp)
 w=2
-line_duration = 20  # Duration in seconds before lines disappear
+line_duration = 1  # Duration in seconds before lines disappear
 line_clear_interval = 1  # Check every second
 screen_color = (255,55,100)
 current_time = pygame.time.get_ticks()
@@ -275,7 +294,7 @@ def infinite_generation():
             platform.destroy()
             platform_group.remove(platform)
 
-    if(len(ropes_group)<5):
+    if(len(ropes_group)<3):
         rope = Ropes()
         rope.rect.x+=true_scroll[0]+1000
         rope.rect.y += true_scroll[1] 
@@ -343,13 +362,12 @@ while True:
             exit()
     screen.fill(screen_color)
     if event.type == pygame.MOUSEMOTION:
-            if drawing:
-                mouse_position = pygame.mouse.get_pos()
-                if last_pos is not None:
-                    pygame.draw.line(screen, (255,255,255), (last_pos[0], last_pos[1]), (mouse_position[0], mouse_position[1]), w)
-                    lines.append((last_pos, mouse_position, current_time, scroll, last_scroll))
-                last_pos = mouse_position
-                last_scroll = scroll
+        if drawing:
+            mouse_position = pygame.mouse.get_pos()
+            if last_pos is not None:
+                lines.append((last_pos, mouse_position, current_time, scroll, last_scroll))
+            last_pos = mouse_position
+            last_scroll = scroll
     elif event.type == pygame.MOUSEBUTTONUP:
         mouse_position = (0, 0)
         drawing = False
@@ -376,38 +394,22 @@ while True:
     # print(scroll[0],end=" ")
     # print(player.rect.x,end=" ")
     # print(player.rect.x-scroll[0])
-    player_movement=[0,0]
-    
-    # player.rect,collisions = move(player.rect,player_movement)
-    # if collisions['bottom'] == True:
-    #     air_timer = 0
-    #     vertical_momentum = 0
-    # else:
-    # screen.blit(rope,(100,300))
-    #     print("YES")
-
-    # print(scroll_y)
-    # print(scroll_x)
-    # screen.blit(rope,(100,300))
-    # ropes_group.update(-scroll[0], -scroll[1])
-    # ropes_group.draw(screen)
-    # screen.blit(test_surface,(300,500)) 
     # shift_back()
     # platform_group.draw(screen)   
     # platform_group.update()
     obstacle_group.update()
     # collision_sprite()
     infinite_generation()
-    player_rect = player.rect.move(-scroll[0], -scroll[1])
 
+    player_rect = player.rect.move(-scroll[0], -scroll[1])
     screen.blit(player.image, player_rect)
     for rope in ropes_group:
             rope_rect = rope.rect.move(-scroll[0], -scroll[1])
             screen.blit(rope.image, rope_rect)
     for platform in platform_group:
             platform_rect = platform.rect.move(-scroll[0], -scroll[1])
-            screen.blit(platform.image, platform_rect)
-
+            screen.blit(platform.image, platform_rect)  
+    player.speed+=0.0001
     pygame.display.update() 
     clock.tick(60)      
 

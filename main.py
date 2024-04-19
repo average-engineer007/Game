@@ -151,6 +151,83 @@ class Player(pygame.sprite.Sprite):
         # self.apply_gravity()
         # self.animate()
 
+
+class enemies(pygame.sprite.Sprite):
+    def __init__(self,x,y):
+        super().__init__()
+        self.image=pygame.image.load('Game/images/Layer 11.png').convert_alpha()
+        self.rect = self.image.get_rect(midbottom = (x,y))
+        border_color = (0, 0, 0)  # Example: white color
+        border_width = 2
+        image_width, image_height = self.image.get_size()
+        pygame.draw.rect(self.image, border_color, (0, 0, image_width, image_height), border_width)
+        self.gravity=0
+        self.player_index=0
+        self.x_pos=self.rect.x
+        self.y_pos=self.rect.y
+        self.move_x=0
+        self.move_y=0
+    def calculate_distance(self):
+        dx = player.rect.x - self.rect.x
+        dy = player.rect.y - self.rect.y
+        distance = math.sqrt(dx**2 + dy**2)
+        return distance
+        
+    def player_movement(self):
+        if(self.calculate_distance<50):
+            if(player.rect.x<self.rect.x):
+                self.move_x=-5
+            elif player.rect.x>self.rect.x:
+                self.move_x=5
+        if(self.gravity>5):
+            self.gravity=5
+        keys=pygame.key.get_pressed()
+
+        self.move_y+=self.gravity
+        self.rect.y+=self.move_y
+        bottom_platform =False
+        top_platform = False
+        hit_list = pygame.sprite.spritecollide(self,platform_group,False)
+        for tile in hit_list:
+            if self.move_y > 0:
+                self.rect.bottom = tile.rect.top
+                self.move_y = 0
+                top_platform=True
+
+            elif self.move_y < 0:
+                self.rect.top = tile.rect.bottom
+                self.move_y = 0
+                bottom_platform=True
+
+        # collision_types = {'top':False,'bottom':False,'right':False,'left':False}
+
+        right_wall=False
+        left_Wall = False
+        line = True
+        hit_list = pygame.sprite.spritecollide(player,platform_group,False)
+        for tile in hit_list:
+            # print(type(tile.rect))
+            if self.move_x > 0:
+                self.rect.right = tile.rect.left
+                right_wall = True
+                # self.gravity=-15
+                # self.move_y = -5
+                # collision_types['right'] = True
+            elif self.move_x < 0:
+                self.rect.left = tile.rect.right
+                # self.gravity =-15
+                # self.move_y = -5
+                left_Wall = True
+                # collision_types['left'] = True
+        self.gravity+=0.53
+    def destroy(self):
+        self.kill()
+    
+    def update(self):
+        self.player_movement()
+
+
+
 class Ropes(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()

@@ -26,7 +26,8 @@ background = pygame.image.load('falling/back.jpg')                              
 font = pygame.font.Font(os.path.join(os.getcwd(), 'falling/comic.ttf'), 42)
 score_text = font.render('Score : ' + str(score), True, (255, 255, 255))    #score display
 lives_icon = pygame.image.load('falling/images/white_lives.png')                    #images that shows remaining lives
-
+w=2
+lines = []
 # Generalized structure of the fruit Dictionary
 def generate_random_fruits(fruit):
     fruit_path = "falling/images/" + fruit + ".png"
@@ -108,6 +109,21 @@ while game_running :
         # checking for closing window
         if event.type == pygame.QUIT:
             game_running = False
+    if event.type == pygame.MOUSEMOTION:
+            if drawing:
+                mouse_position = pygame.mouse.get_pos()
+                if last_pos is not None:
+                    pygame.draw.line(gameDisplay, (255,255,255), (last_pos[0], last_pos[1]), (mouse_position[0], mouse_position[1]), w)
+                    lines.append((last_pos, mouse_position, current_time, last_scroll))
+                last_pos = mouse_position
+    elif event.type == pygame.MOUSEBUTTONUP:
+        mouse_position = (0, 0)
+        drawing = False
+        last_pos = None
+        last_scroll = None
+    elif event.type == pygame.MOUSEBUTTONDOWN:
+        drawing = True
+    current_time = pygame.time.get_ticks()
 
     gameDisplay.blit(background, (0, 0))
     gameDisplay.blit(score_text, (0, 0))

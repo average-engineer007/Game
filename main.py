@@ -479,7 +479,7 @@ def infinite_generation():
             new_platform.rect.x += 100
             new_platform.rect.y += 100
         platform_group.add(new_platform)
-        if random.randint(0,3)==1:
+        if random.randint(0,2)==1:
             enem=enemies(new_platform.rect.x,new_platform.rect.top,new_platform.rect.topleft[0],new_platform.rect.topright[0])
             enemy_group.add(enem)
             platform_group.add(platform)
@@ -501,7 +501,12 @@ def enemy_check():
         # print("YES")
         player.fall_damage+=(0.1*l)
 
-
+def rope_check():
+    hit_list = pygame.sprite.spritecollide(player,ropes_group,False)
+    l=len(hit_list)
+    if(l>0):
+        # print("YES")
+        player.fall_damage+=(0.1*l)
 def move(rect,movement):
     collision_types = {'top':False,'bottom':False,'right':False,'left':False}
     rect.x += movement[0]
@@ -528,77 +533,88 @@ def move(rect,movement):
 
 health_bar = HealthBar(50, 50, 200, 20, 100)
 score_board = ScoreBoard(900, 50)
+scroll = true_scroll.copy()
+def run(screen):
+    global scroll
+    pygame.mixer.music.load('game_sound/background_music.mp3')
+    pygame.mixer.music.set_volume(0.3)  # Set volume (0.0 to 1.0)
+    pygame.mixer.music.play(-1) 
+    while True: 
+        if(player.fall_damage >= 100):
+            return
+        screen.blit(background_image,(0,0))
+        for event in pygame.event.get():
+            if event.type ==pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return  # Return to the main menu
+        # screen.fill(screen_color)
+        
+            if event.type == pygame.MOUSEMOTION:
+                if drawing:
+                    mouse_position = pygame.mouse.get_pos()
+                    if last_pos is not None:
+                        lines.append((last_pos, mouse_position, current_time, scroll, last_scroll))
+                    last_pos = mouse_position
+                    last_scroll = scroll
+            elif event.type == pygame.MOUSEBUTTONUP:
+                mouse_position = (0, 0)
+                drawing = False
+                last_pos = None
+                last_scroll = None
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                drawing = True
+        current_time = pygame.time.get_ticks()
+        for line in lines:
+            start_pos, end_pos, timestamp,old_scroll , last_old_scroll= line
+            if (current_time - timestamp) / 1000 >= line_duration:
+                lines.remove(line)
+        # screen.fill(screen_color)  # Clear screen
+        for line in lines:
+            start_pos, end_pos, timestamp, old_scroll , last_old_scroll= line
+            pygame.draw.line(screen, (255,255,255), (start_pos[0]+last_old_scroll[0]-scroll[0], start_pos[1]+last_old_scroll[1]-scroll[1]), (end_pos[0]+old_scroll[0]-scroll[0], end_pos[1]+old_scroll[1]-scroll[1]), w)
+        # obstacle_group.draw(screen)
+        true_scroll[0] += (player.rect.x-true_scroll[0]-400)/20
+        true_scroll[1] += (player.rect.y-true_scroll[1]-300)/20
+        scroll = true_scroll.copy()
+        scroll[0] = int(scroll[0])
+        scroll[1] = int(scroll[1])
+        player.update()
+        health_bar.update_health(100-player.fall_damage)
+        score_board.update_score(0.25)
+        score_board.draw(screen)
+        health_bar.draw(screen)
+        # print(scroll[0])
+        # print(scroll[0],end=" ")
+        # print(player.rect.x,end=" ")
+        # print(player.rect.x-scroll[0])
+        # shift_back()
+        # platform_group.draw(screen)   
+        # platform_group.update()
+        obstacle_group.update()
+        enemy_group.update()
+        rope_check()
+        # collision_sprite()
+        
+        infinite_generation()
+        enemy_check()
+        player_rect = player.rect.move(-scroll[0], -scroll[1])
+        screen.blit(player.image, player_rect)
+        for rope in ropes_group:
+                rope_rect = rope.rect.move(-scroll[0], -scroll[1])
+                screen.blit(rope.image, rope_rect)
+        for platform in platform_group:
+                platform_rect = platform.rect.move(-scroll[0], -scroll[1])
+                screen.blit(platform.image, platform_rect) 
+        for enemy in enemy_group:
+            enemy_rect = enemy.rect.move(-scroll[0], -scroll[1])
+            screen.blit(enemy.image, enemy_rect)  
+        
+        pygame.display.update() 
+        clock.tick(60)      
 
-while True: 
-    for event in pygame.event.get():
-        if event.type ==pygame.QUIT:
-            pygame.quit()
-            exit()
-    # screen.fill(screen_color)
-    screen.blit(background_image,(0,0))
-    
-    if event.type == pygame.MOUSEMOTION:
-        if drawing:
-            mouse_position = pygame.mouse.get_pos()
-            if last_pos is not None:
-                lines.append((last_pos, mouse_position, current_time, scroll, last_scroll))
-            last_pos = mouse_position
-            last_scroll = scroll
-    elif event.type == pygame.MOUSEBUTTONUP:
-        mouse_position = (0, 0)
-        drawing = False
-        last_pos = None
-        last_scroll = None
-    elif event.type == pygame.MOUSEBUTTONDOWN:
-        drawing = True
-    current_time = pygame.time.get_ticks()
-    for line in lines:
-        start_pos, end_pos, timestamp,old_scroll , last_old_scroll= line
-        if (current_time - timestamp) / 1000 >= line_duration:
-            lines.remove(line)
-    # screen.fill(screen_color)  # Clear screen
-    for line in lines:
-        start_pos, end_pos, timestamp, old_scroll , last_old_scroll= line
-        pygame.draw.line(screen, (255,255,255), (start_pos[0]+last_old_scroll[0]-scroll[0], start_pos[1]+last_old_scroll[1]-scroll[1]), (end_pos[0]+old_scroll[0]-scroll[0], end_pos[1]+old_scroll[1]-scroll[1]), w)
-    # obstacle_group.draw(screen)
-    true_scroll[0] += (player.rect.x-true_scroll[0]-400)/20
-    true_scroll[1] += (player.rect.y-true_scroll[1]-300)/20
-    scroll = true_scroll.copy()
-    scroll[0] = int(scroll[0])
-    scroll[1] = int(scroll[1])
-    player.update()
-    health_bar.update_health(100-player.fall_damage)
-    score_board.update_score(0.25)
-    score_board.draw(screen)
-    health_bar.draw(screen)
-    # print(scroll[0])
-    # print(scroll[0],end=" ")
-    # print(player.rect.x,end=" ")
-    # print(player.rect.x-scroll[0])
-    # shift_back()
-    # platform_group.draw(screen)   
-    # platform_group.update()
-    obstacle_group.update()
-    enemy_group.update()
-    # collision_sprite()
-    
-    infinite_generation()
-    enemy_check()
-    player_rect = player.rect.move(-scroll[0], -scroll[1])
-    screen.blit(player.image, player_rect)
-    for rope in ropes_group:
-            rope_rect = rope.rect.move(-scroll[0], -scroll[1])
-            screen.blit(rope.image, rope_rect)
-    for platform in platform_group:
-            platform_rect = platform.rect.move(-scroll[0], -scroll[1])
-            screen.blit(platform.image, platform_rect) 
-    for enemy in enemy_group:
-        enemy_rect = enemy.rect.move(-scroll[0], -scroll[1])
-        screen.blit(enemy.image, enemy_rect)  
-    
-    pygame.display.update() 
-    clock.tick(60)      
 
 
-
-    
+        

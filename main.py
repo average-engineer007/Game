@@ -32,7 +32,7 @@ class Player(pygame.sprite.Sprite):
         self.player_index=0
         self.x_pos=self.rect.x
         self.y_pos=self.rect.y
-        self.move_x=0
+        self.move_x=5
         self.move_y=0
         self.line_collision = False
         self.fall_damage=0
@@ -82,10 +82,10 @@ class Player(pygame.sprite.Sprite):
             self.gravity=0.16
         keys=pygame.key.get_pressed()
 
-        if keys[pygame.K_UP] :
+        if keys[pygame.K_UP] and keys[pygame.K_LSHIFT]:
             self.move_y=-5
             self.gravity=-0.2
-        elif keys[pygame.K_DOWN] :
+        elif keys[pygame.K_DOWN]and keys[pygame.K_LSHIFT] :
             self.move_y=5
         # else:
         #     self.move_y=0
@@ -109,9 +109,9 @@ class Player(pygame.sprite.Sprite):
                 bottom_platform=True
 
         # collision_types = {'top':False,'bottom':False,'right':False,'left':False}
-        if keys[pygame.K_RIGHT] :
+        if keys[pygame.K_RIGHT] and keys[pygame.K_LSHIFT]:
             self.move_x=5
-        elif keys[pygame.K_LEFT] :
+        elif keys[pygame.K_LEFT] and keys[pygame.K_LSHIFT]:
             self.move_x=-5
         self.rect.x+=self.move_x
 
@@ -206,20 +206,23 @@ class Player(pygame.sprite.Sprite):
 
 
 class enemies(pygame.sprite.Sprite):
-    def __init__(self,x,y):
+    def __init__(self,x,y,l,r):
         super().__init__()
-        self.image=pygame.image.load('images/Layer 11.png').convert_alpha()
+        self.image=pygame.image.load('images/NightBorne.png').convert_alpha()
+        self.image=pygame.transform.rotozoom(self.image, 0, 2)
         self.rect = self.image.get_rect(midbottom = (x,y))
         border_color = (0, 0, 0)  # Example: white color
         border_width = 2
         image_width, image_height = self.image.get_size()
-        pygame.draw.rect(self.image, border_color, (0, 0, image_width, image_height), border_width)
+        # pygame.draw.rect(self.image, border_color, (0, 0, image_width, image_height), border_width)
         self.gravity=0
         self.player_index=0
         self.x_pos=self.rect.x
         self.y_pos=self.rect.y
         self.move_x=0
         self.move_y=0
+        self.right_limit=r
+        self.left_limit=l
     def calculate_distance(self):
         dx = player.rect.x - self.rect.x
         dy = player.rect.y - self.rect.y
@@ -235,45 +238,49 @@ class enemies(pygame.sprite.Sprite):
                 self.move_x=2
 
 
-        self.move_y+=self.gravity
-        self.rect.y+=self.move_y
-        # bottom_platform =False
-        # top_platform = False
-        hit_list = pygame.sprite.spritecollide(self,platform_group,False)
-        for tile in hit_list:
+        # self.move_y+=self.gravity
+        # self.rect.y+=self.move_y
+        # # bottom_platform =False
+        # # top_platform = False
+        # hit_list = pygame.sprite.spritecollide(self,platform_group,False)
+        # for tile in hit_list:
 
-            if self.rect.midbottom[0] <= tile.rect.topleft[0]:
-                self.rect.bottomleft = (tile.rect.topleft[0], self.rect.topleft[1])
+        #     if self.rect.midbottom[0] <= tile.rect.topleft[0]:
+        #         self.rect.bottomleft = (tile.rect.topleft[0], self.rect.topleft[1])
 
-            # Update the position of the bottom right corner
-            if self.rect.midbottom[0] >= tile.rect.topright[0]:
-                self.rect.bottomright = (tile.rect.topright[0], self.rect.topright[1])
+        #     # Update the position of the bottom right corner
+        #     if self.rect.midbottom[0] >= tile.rect.topright[0]:
+        #         self.rect.bottomright = (tile.rect.topright[0], self.rect.topright[1])
 
-            if self.move_y > 0:
-                self.rect.bottom = tile.rect.top
-                self.move_y = 0
-                top_platform=True
+        #     if self.move_y > 0:
+        #         self.rect.bottom = tile.rect.top
+        #         self.move_y = 0
+        #         top_platform=True
 
-            elif self.move_y < 0:
-                self.rect.top = tile.rect.bottom
-                self.move_y = 0
-                bottom_platform=True
+        #     elif self.move_y < 0:
+        #         self.rect.top = tile.rect.bottom
+        #         self.move_y = 0
+        #         bottom_platform=True
 
         # collision_types = {'top':False,'bottom':False,'right':False,'left':False}
 
 
         self.rect.x+=self.move_x
         hit_list = pygame.sprite.spritecollide(player,platform_group,False)
-        for tile in hit_list:
-            # print(type(tile.rect))
-            if self.move_x > 0:
-                self.rect.right = tile.rect.left
-                right_wall = True
-                # self.gravity=-15
-                # self.move_y = -5
-                # collision_types['right'] = True
-            elif self.move_x < 0:
-                self.rect.left = tile.rect.right
+        if (self.rect.x>self.right_limit):
+            self.rect.x=self.right_limit
+        if (self.rect.x<self.left_limit):
+            self.rect.x=self.left_limit
+        # for tile in hit_list:
+        #     # print(type(tile.rect))
+        #     if self.move_x > 0:
+        #         self.rect.right = tile.rect.left
+        #         right_wall = True
+        #         # self.gravity=-15
+        #         # self.move_y = -5
+        #         # collision_types['right'] = True
+        #     elif self.move_x < 0:
+        #         self.rect.left = tile.rect.right
 
 
 
@@ -443,6 +450,10 @@ def infinite_generation():
         if(platform.rect.x - scroll[0] < -300) or (platform.rect.y - scroll[1]<-300):
             platform.destroy()
             platform_group.remove(platform)
+    for enemy in enemy_group:
+        if(enemy.rect.x - scroll[0] < -300) or (enemy.rect.y - scroll[1]<-300):
+            enemy.destroy()
+            enemy_group.remove(enemy)
 
     # if(len(ropes_group)<5):
     #     rope = Ropes()
@@ -468,9 +479,10 @@ def infinite_generation():
             new_platform.rect.x += 100
             new_platform.rect.y += 100
         platform_group.add(new_platform)
-        enem=enemies(platform.rect.x,platform.rect.top)
-        enemy_group.add(enem)
-        platform_group.add(platform)
+        if random.randint(0,3)==1:
+            enem=enemies(new_platform.rect.x,new_platform.rect.top,new_platform.rect.topleft[0],new_platform.rect.topright[0])
+            enemy_group.add(enem)
+            platform_group.add(platform)
     if len(ropes_group) < 5:
         new_rope = Ropes()
         new_rope.rect.x +=true_scroll[0] + 1000
@@ -482,6 +494,12 @@ def infinite_generation():
 
         ropes_group.add(new_rope)
 
+def enemy_check():
+    hit_list = pygame.sprite.spritecollide(player,enemy_group,False)
+    l=len(hit_list)
+    if(l>0):
+        # print("YES")
+        player.fall_damage+=(0.1*l)
 
 
 def move(rect,movement):
@@ -553,7 +571,7 @@ while True:
     score_board.update_score(0.25)
     score_board.draw(screen)
     health_bar.draw(screen)
-    print(scroll[0])
+    # print(scroll[0])
     # print(scroll[0],end=" ")
     # print(player.rect.x,end=" ")
     # print(player.rect.x-scroll[0])
@@ -561,11 +579,11 @@ while True:
     # platform_group.draw(screen)   
     # platform_group.update()
     obstacle_group.update()
-    # enemy_group.update()
+    enemy_group.update()
     # collision_sprite()
     
     infinite_generation()
-
+    enemy_check()
     player_rect = player.rect.move(-scroll[0], -scroll[1])
     screen.blit(player.image, player_rect)
     for rope in ropes_group:
@@ -574,9 +592,9 @@ while True:
     for platform in platform_group:
             platform_rect = platform.rect.move(-scroll[0], -scroll[1])
             screen.blit(platform.image, platform_rect) 
-    # for enemy in enemy_group:
-    #     enemy_rect = enemy.rect.move(-scroll[0], -scroll[1])
-    #     screen.blit(enemy.image, enemy_rect)  
+    for enemy in enemy_group:
+        enemy_rect = enemy.rect.move(-scroll[0], -scroll[1])
+        screen.blit(enemy.image, enemy_rect)  
     
     pygame.display.update() 
     clock.tick(60)      
